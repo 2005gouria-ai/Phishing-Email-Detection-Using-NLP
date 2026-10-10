@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Phishing Email Detector</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1>Phishing Email Detector</h1>
+      <p class="subtitle">
+        Paste an email below and the model classifies it as
+        <strong>Phishing</strong> or <strong>Legitimate</strong>.
+      </p>
+    </header>
+
+    <main class="card">
+      <form method="POST" action="/predict">
+        <label for="email_text">Email content</label>
+        <textarea
+          id="email_text"
+          name="email_text"
+          rows="9"
+          placeholder="Paste the subject and body of the email here..."
+        >{{ text or '' }}</textarea>
+        <div class="actions">
+          <button type="submit">Analyse email</button>
+          <button type="button" class="ghost" id="load-sample">Load a sample</button>
+        </div>
+      </form>
+
+      {% if error %}
+        <div class="banner error">{{ error }}</div>
+      {% endif %}
+
+      {% if result %}
+        <div class="banner {{ 'danger' if result.is_phishing else 'safe' }}">
+          <span class="verdict">{{ result.label }}</span>
+          <span class="confidence">
+            Confidence: {{ result.confidence }}% &middot;
+            Phishing probability: {{ result.phishing_probability }}%
+          </span>
+        </div>
+      {% endif %}
+    </main>
+
+    {% if metrics %}
+    <section class="metrics">
+      <h2>Model performance</h2>
+      <div class="metric-grid">
+        <div class="metric"><span class="value">{{ (metrics.accuracy * 100) | round(1) }}%</span><span class="key">Accuracy</span></div>
+        <div class="metric"><span class="value">{{ (metrics.precision_phishing * 100) | round(1) }}%</span><span class="key">Precision</span></div>
+        <div class="metric"><span class="value">{{ (metrics.recall_phishing * 100) | round(1) }}%</span><span class="key">Recall</span></div>
+        <div class="metric"><span class="value">{{ (metrics.f1_phishing * 100) | round(1) }}%</span><span class="key">F1 score</span></div>
+      </div>
+      <p class="note">
+        Trained on {{ metrics.n_train }} emails &middot; tested on {{ metrics.n_test }}
+        &middot; {{ metrics.model }}
+      </p>
+    </section>
+    {% endif %}
+
+    <footer class="foot">
+      <p>
+        JSON API: <code>POST /api/predict</code> with
+        <code>{"text": "..."}</code> &middot; Health: <code>GET /health</code>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    const samples = [
+      "Dear Customer, we detected unusual activity on your account. Verify your identity within 24 hours by clicking http://secure-verify-login.xyz/confirm and confirming your username and password.",
+      "Hi team, here are the notes from today's standup. We closed three tickets and are on track for the sprint goal. Please review the doc before Thursday."
+    ];
+    let i = 0;
+    document.getElementById("load-sample").addEventListener("click", () => {
+      document.getElementById("email_text").value = samples[i % samples.length];
+      i++;
+    });
+  </script>
+</body>
+</html>
